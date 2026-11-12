@@ -7,7 +7,7 @@ source 'https://github.com/weapp-container/Specs.git'
 source 'https://cdn.cocoapods.org/'
 ```
 
-Version `0.1.0-preview.7.0` is available from this public source. Both Podspecs select immutable GitHub Release archives with SHA-256 verification. Anonymous archive download and remote `pod spec lint` passed for both Pods; iOS simulator interaction acceptance passed. Physical-device execution is not yet recorded.
+Version `0.1.0-preview.7.0` is available from this public source. The iOS wrapper requires Xcode 27.2+ to compile (deployment target remains iOS 16+). Both Podspecs select immutable GitHub Release archives with SHA-256 verification. Anonymous archive download and remote `pod spec lint` passed for both Pods; iOS simulator interaction acceptance passed. Physical-device execution is not yet recorded.
 
 ```ruby
 pod 'WeappContainer', '0.1.0-preview.7.0' # iOS
