@@ -9,7 +9,7 @@ const release = JSON.parse(readFileSync(resolve(option('--manifest'))));
 const name = spec.match(/s.name = '([^']+)'/)?.[1], version = spec.match(/s.version = '([^']+)'/)?.[1];
 const repository = ({ WeappContainer: 'weapp-container/sdk-ios', WeappContainerDesktop: 'weapp-container/sdk-desktop' })[name];
 if (!repository || release.repository !== repository || release.sdkVersion !== version || release.tag !== `v${version}` || release.sourceDirty !== false || !/^[a-f0-9]{40}$/.test(release.sourceCommit ?? '') || !/^\d+\.\d+\.\d+-preview\.\d+\.\d+$/.test(version)) throw Error('Unexpected spec release identity');
-const source = spec.match(/s.source = \{ :http => '([^']+)', :sha256 => '([a-f0-9]{64})' \}/);
+const source = spec.match(/s.source = \{ :http => '([^']+)', :sha256 => '([a-f0-9]{64})'(?:, :flatten => true)? \}/);
 const asset = release.assets.find(asset => source?.[1] === `https://github.com/${repository}/releases/download/${release.tag}/${asset.fileName}` && source?.[2] === asset.sha256);
 if (!asset || !Number.isSafeInteger(asset.size) || asset.size < 1 || /prepare_command/.test(spec)) throw Error('The spec must select a verified immutable HTTP archive');
 const destination = resolve(root, 'Specs', name, version, `${name}.podspec`);
