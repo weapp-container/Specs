@@ -1,0 +1,23 @@
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const option = name => { const index = process.argv.indexOf(name); if (index < 0 || !process.argv[index + 1]) throw Error(`Supply ${name}`); return process.argv[index + 1]; };
+const spec = readFileSync(resolve(option('--spec')), 'utf8');
+const release = JSON.parse(readFileSync(resolve(option('--manifest'))));
+const name = spec.match(/s.name = '([^']+)'/)?.[1], version = spec.match(/s.version = '([^']+)'/)?.[1];
+const repository = ({ WeappContainer: 'weapp-container/sdk-ios', WeappContainerDesktop: 'weapp-container/sdk-desktop' })[name];
+if (!repository || release.repository !== repository || release.sdkVersion !== version || release.tag !== `v${version}` || release.sourceDirty !== false || !/^[a-f0-9]{40}$/.test(release.sourceCommit ?? '') || !/^\d+\.\d+\.\d+-preview\.\d+\.\d+$/.test(version)) throw Error('Unexpected spec release identity');
+const source = spec.match(/s.source = \{ :http => '([^']+)', :sha256 => '([a-f0-9]{64})' \}/);
+const asset = release.assets.find(asset => source?.[1] === `https://github.com/${repository}/releases/download/${release.tag}/${asset.fileName}` && source?.[2] === asset.sha256);
+if (!asset || !Number.isSafeInteger(asset.size) || asset.size < 1 || /prepare_command/.test(spec)) throw Error('The spec must select a verified immutable HTTP archive');
+const destination = resolve(root, 'Specs', name, version, `${name}.podspec`);
+if (existsSync(destination)) throw Error('An existing spec version is immutable');
+const response = await fetch(source[1], { signal: AbortSignal.timeout(300000) });
+if (!response.ok) throw Error(`Public archive unavailable (${response.status})`);
+const hash = createHash('sha256'); let size = 0;
+for await (const chunk of response.body) { hash.update(chunk); size += chunk.length; if (size > asset.size) throw Error('Public archive is larger than its verified receipt'); }
+if (size !== asset.size || hash.digest('hex') !== asset.sha256) throw Error('Public archive hash/size mismatch');
+mkdirSync(dirname(destination), { recursive: true }); writeFileSync(destination, spec, { flag: 'wx' });
+console.log(`Imported ${name} ${version}; anonymous download matched the release hash`);
